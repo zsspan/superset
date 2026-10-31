@@ -92,7 +92,21 @@ export class CreateDatasetPage {
    * @param schemaName - The name of the schema to select
    */
   async selectSchema(schemaName: string): Promise<void> {
-    await this.getSchemaSelect().selectOption(schemaName);
+    const schemaNode = this.page.locator(
+      `[data-test="schema-node-${schemaName}"]`,
+    );
+    if (await schemaNode.isVisible({ timeout: 1500 }).catch(() => false)) {
+      await schemaNode.click();
+    } else {
+      const select = this.getSchemaSelect();
+      if (
+        await select.element.isVisible({ timeout: 1500 }).catch(() => false)
+      ) {
+        await select.selectOption(schemaName);
+      } else {
+        await this.page.getByText(schemaName, { exact: true }).click();
+      }
+    }
   }
 
   /**
@@ -100,7 +114,21 @@ export class CreateDatasetPage {
    * @param tableName - The name of the table to select
    */
   async selectTable(tableName: string): Promise<void> {
-    await this.getTableSelect().selectOption(tableName);
+    const tableNode = this.page.locator(
+      `[data-test="table-node-${tableName}"]`,
+    );
+    if (await tableNode.isVisible({ timeout: 1500 }).catch(() => false)) {
+      await tableNode.click();
+    } else {
+      const select = this.getTableSelect();
+      if (
+        await select.element.isVisible({ timeout: 1500 }).catch(() => false)
+      ) {
+        await select.selectOption(tableName);
+      } else {
+        await this.page.getByText(tableName, { exact: true }).click();
+      }
+    }
   }
 
   /**

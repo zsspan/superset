@@ -19,7 +19,13 @@
 import zlib from 'node:zlib';
 import { Writable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
-import { ZSTDDecompress } from 'simple-zstd';
+let ZSTDDecompress;
+try {
+  const zstdModule = await import('simple-zstd');
+  ZSTDDecompress = zstdModule.ZSTDDecompress;
+} catch {
+  // zstd binary not installed on host (common on Windows)
+}
 
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
@@ -140,7 +146,7 @@ async function processHTML(proxyResponse, response) {
     uncompress = zlib.createBrotliDecompress();
   } else if (responseEncoding === 'deflate') {
     uncompress = zlib.createInflate();
-  } else if (responseEncoding === 'zstd') {
+  } else if (responseEncoding === 'zstd' && ZSTDDecompress) {
     uncompress = ZSTDDecompress();
     uncompress.once('started', childProcess => {
       if (killZstdChild) {

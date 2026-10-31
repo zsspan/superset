@@ -19,17 +19,15 @@
 import { useEffect, SetStateAction, Dispatch, useCallback } from 'react';
 import { t } from '@apache-superset/core/translation';
 import { styled } from '@apache-superset/core/theme';
-import TableSelector, { TableOption } from 'src/components/TableSelector';
-import { EmptyState } from '@superset-ui/core/components';
-import { type DatabaseObject } from 'src/components';
+import { DatabaseSelector, TableExploreTree, type DatabaseObject } from 'src/components';
+import { Empty, EmptyState, Typography } from '@superset-ui/core/components';
+import WarningIconWithTooltip from '@superset-ui/core/components/WarningIconWithTooltip';
 import { useToasts } from 'src/components/MessageToasts/withToasts';
 import { LocalStorageKeys, getItem } from 'src/utils/localStorageHelpers';
 import {
   DatasetActionType,
   DatasetObject,
 } from 'src/features/datasets/AddDataset/types';
-import { Table } from 'src/hooks/apiResources';
-import { Typography } from '@superset-ui/core/components/Typography';
 import { ensureAppRoot } from 'src/utils/navigationUtils';
 
 interface LeftPanelProps {
@@ -44,79 +42,15 @@ const LeftPanelStyle = styled.div`
     height: 100%;
     background-color: ${theme.colorBgContainer};
     position: relative;
-    .emptystate {
-      height: auto;
-      margin-top: ${theme.sizeUnit * 17.5}px;
-    }
-    .section-title {
-      margin-top: ${theme.sizeUnit * 5.5}px;
-      margin-bottom: ${theme.sizeUnit * 11}px;
-      font-weight: ${theme.fontWeightStrong};
-    }
-    .table-title {
-      margin-top: ${theme.sizeUnit * 11}px;
-      margin-bottom: ${theme.sizeUnit * 6}px;
-      font-weight: ${theme.fontWeightStrong};
-    }
-    .options-list {
-      overflow: auto;
-      position: absolute;
-      bottom: 0;
-      top: ${theme.sizeUnit * 92.25}px;
-      left: ${theme.sizeUnit * 3.25}px;
-      right: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 
-      .no-scrollbar {
-        margin-right: ${theme.sizeUnit * 4}px;
-      }
-
-      .options {
-        cursor: pointer;
-        padding: ${theme.sizeUnit * 1.75}px;
-        border-radius: ${theme.borderRadius}px;
-        :hover {
-          background-color: ${theme.colorFillTertiary}
-        }
-      }
-
-      .options-highlighted {
-        cursor: pointer;
-        padding: ${theme.sizeUnit * 1.75}px;
-        border-radius: ${theme.borderRadius}px;
-        background-color: ${theme.colorPrimaryText};
-        color: ${theme.colorTextLightSolid};
-      }
-
-      .options, .options-highlighted {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-      }
+    .divider {
+      border-bottom: 1px solid ${theme.colorSplit};
+      margin: ${theme.sizeUnit * 3}px 0;
     }
-    form > span[aria-label="refresh"] {
-      position: absolute;
-      top: ${theme.sizeUnit * 69}px;
-      left: ${theme.sizeUnit * 42.75}px;
-      font-size: ${theme.sizeUnit * 4.25}px;
-    }
-    .table-form {
-      margin-bottom: ${theme.sizeUnit * 8}px;
-    }
-    .loading-container {
-      position: absolute;
-      top: ${theme.sizeUnit * 89.75}px;
-      left: 0;
-      right: 0;
-      text-align: center;
-      img {
-        width: ${theme.sizeUnit * 20}px;
-        margin-bottom: ${theme.sizeUnit * 2.5}px;
-      }
-      p {
-        color: ${theme.colorTextSecondary};
-      }
-    }
-`}
+  `}
 `;
 
 export default function LeftPanel({
@@ -132,28 +66,29 @@ export default function LeftPanel({
     },
     [setDataset],
   );
-  const setCatalog = (catalog: string | null) => {
-    if (catalog) {
+
+  const setCatalog = useCallback(
+    (catalog: string | null) => {
+      if (catalog) {
+        setDataset({
+          type: DatasetActionType.SelectCatalog,
+          payload: { name: 'catalog', value: catalog },
+        });
+      }
+    },
+    [setDataset],
+  );
+
+  const handleSelectTable = useCallback(
+    ({ schema, tableName }: { schema: string; tableName: string }) => {
       setDataset({
-        type: DatasetActionType.SelectCatalog,
-        payload: { name: 'catalog', value: catalog },
+        type: DatasetActionType.SelectTableAndSchema,
+        payload: { schema, table_name: tableName },
       });
-    }
-  };
-  const setSchema = (schema: string) => {
-    if (schema) {
-      setDataset({
-        type: DatasetActionType.SelectSchema,
-        payload: { name: 'schema', value: schema },
-      });
-    }
-  };
-  const setTable = (tableName: string) => {
-    setDataset({
-      type: DatasetActionType.SelectTable,
-      payload: { name: 'table_name', value: tableName },
-    });
-  };
+    },
+    [setDataset],
+  );
+
   useEffect(() => {
     const currentUserSelectedDb = getItem(
       LocalStorageKeys.Database,
@@ -164,23 +99,22 @@ export default function LeftPanel({
     }
   }, [setDatabase]);
 
-  const customTableOptionLabelRenderer = useCallback(
-    (table: Table) => (
-      <TableOption
-        table={
-          datasetNames?.includes(table.value)
-            ? {
-                ...table,
-                extra: {
-                  warning_markdown: t('This table already has a dataset'),
-                },
-              }
-            : table
-        }
-      />
-    ),
+  const renderTableExtra = useCallback(
+    ({ tableName }: { tableName: string }) => {
+      if (datasetNames?.includes(tableName)) {
+        return (
+          <WarningIconWithTooltip
+            warningMarkdown={t('This table already has a dataset')}
+            size="l"
+            marginRight={4}
+          />
+        );
+      }
+      return null;
+    },
     [datasetNames],
   );
+
   const getDatabaseEmptyState = (emptyResultsWithSearch: boolean) => (
     <EmptyState
       image="empty.svg"
@@ -202,19 +136,36 @@ export default function LeftPanel({
   );
 
   return (
-    <LeftPanelStyle>
-      <TableSelector
-        database={dataset?.db}
-        handleError={addDangerToast}
+    <LeftPanelStyle data-test="dataset-left-panel">
+      <DatabaseSelector
+        db={dataset?.db}
         emptyState={getDatabaseEmptyState(false)}
+        handleError={addDangerToast}
         onDbChange={setDatabase}
         onCatalogChange={setCatalog}
-        onSchemaChange={setSchema}
-        onTableSelectChange={setTable}
-        customTableOptionLabelRenderer={customTableOptionLabelRenderer}
-        {...(dataset?.catalog && { catalog: dataset.catalog })}
-        {...(dataset?.schema && { schema: dataset.schema })}
+        catalog={dataset?.catalog}
+        showSchemaSelector={false}
       />
+      <div className="divider" />
+      {dataset?.db?.id ? (
+        <TableExploreTree
+          dbId={dataset?.db?.id}
+          catalog={dataset?.catalog}
+          selectedTable={{
+            schema: dataset?.schema,
+            tableName: dataset?.table_name,
+          }}
+          onSelectTable={handleSelectTable}
+          renderTableExtra={renderTableExtra}
+          showColumns={false}
+          showToolbar
+        />
+      ) : (
+        <Empty
+          description={t('Select a database to view schemas and tables')}
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+        />
+      )}
     </LeftPanelStyle>
   );
 }

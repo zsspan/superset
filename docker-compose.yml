@@ -76,7 +76,7 @@ services:
         max_attempts=300  # ~10 minutes at 2s intervals; first build can be slow
         echo "Waiting for webpack dev server at $$url..."
         attempt=0
-        until curl -sf --max-time 5 -H "Host: localhost" -o /dev/null "$$url"; do
+        until curl -sf --max-time 30 -H "Host: localhost" -o /dev/null "$$url"; do
           attempt=$$((attempt + 1))
           if [ "$$attempt" -ge "$$max_attempts" ]; then
             echo "ERROR: webpack dev server did not serve $$url after $$max_attempts attempts." >&2
@@ -314,3 +314,4 @@ volumes:
     external: false
   superset_data:
     external: false
+

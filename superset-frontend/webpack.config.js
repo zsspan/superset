@@ -520,14 +520,14 @@ const config = {
         },
       },
       {
-        test: /node_modules\/(@deck\.gl|@luma\.gl).*\.js$/,
+        test: /[\\/]node_modules[\\/](@deck\.gl|@luma\.gl).*\.js$/,
         loader: 'imports-loader',
         options: {
           additionalCode: 'var module = module || {exports: {}};',
         },
       },
       {
-        test: /node_modules\/(geostyler|geostyler-openlayers-parser|geostyler-mapbox-parser|geostyler-sld-parser)\/.*\.js$/,
+        test: /[\\/]node_modules[\\/](geostyler|geostyler-openlayers-parser|geostyler-mapbox-parser|geostyler-sld-parser)[\\/].*\.js$/,
         resolve: {
           fullySpecified: false,
         },
@@ -540,7 +540,7 @@ const config = {
       {
         test: /\.jsx?$/,
         // include source code for plugins, but exclude node_modules and test files within them
-        exclude: [/superset-ui.*\/node_modules\//, /\.test.jsx?$/],
+        exclude: [/superset-ui.*[\\/]node_modules[\\/]/, /\.test.jsx?$/],
         include: [
           new RegExp(`${APP_DIR}/(src|.storybook|plugins|packages)`),
           ...['./src', './.storybook', './plugins', './packages'].map(p =>
@@ -578,7 +578,7 @@ const config = {
       {
         test: /\.png$/,
         issuer: {
-          not: [/\/src\/assets\/staticPages\//],
+          not: [/[\\/]src[\\/]assets[\\/]staticPages[\\/]/],
         },
         type: 'asset',
         generator: {
@@ -587,7 +587,7 @@ const config = {
       },
       {
         test: /\.png$/,
-        issuer: /\/src\/assets\/staticPages\//,
+        issuer: /[\\/]src[\\/]assets[\\/]staticPages[\\/]/,
         type: 'asset',
       },
       {

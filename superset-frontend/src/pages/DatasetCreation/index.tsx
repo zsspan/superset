@@ -65,6 +65,12 @@ export function datasetReducer(
         [action.payload.name]: action.payload.value,
         table_name: null,
       };
+    case DatasetActionType.SelectTableAndSchema:
+      return {
+        ...trimmedState,
+        schema: action.payload.schema,
+        table_name: action.payload.table_name,
+      };
     case DatasetActionType.SelectTable:
       return {
         ...trimmedState,

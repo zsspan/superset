@@ -29,7 +29,7 @@ from superset.views.base import BaseFilter
 
 class ReportScheduleFilter(BaseFilter):  # pylint: disable=too-few-public-methods
     def apply(self, query: Query, value: Any) -> Query:
-        if security_manager.can_access_all_datasources():
+        if security_manager.can_access_all_queries():
             return query
 
         return self._apply_editors(query)

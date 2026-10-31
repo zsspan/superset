@@ -1,3 +1,9 @@
+# User Preferences & Agent Behavior Guidelines
+
+## Troubleshooting & Major Gap Guidelines
+- **Explain Before Acting**: During troubleshooting, debugging, environment setup, or major gaps, NEVER execute commands, tool calls, file reads, or edits without explaining first in plain English what is being inspected or changed and why.
+- **Normal Development Allowed**: When actively writing standard feature code or implementing agreed-upon designs, normal rapid tool workflow is permitted.
+
 # LLM Context Guide for Apache Superset
 
 Apache Superset is a data visualization platform with Flask/Python backend and React/TypeScript frontend.

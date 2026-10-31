@@ -21,7 +21,7 @@ from unittest.mock import MagicMock, patch
 def test_report_schedule_filter_admin_sees_all(mock_sm: MagicMock) -> None:
     from superset.reports.filters import ReportScheduleFilter
 
-    mock_sm.can_access_all_datasources.return_value = True
+    mock_sm.can_access_all_queries.return_value = True
     query = MagicMock()
     f = ReportScheduleFilter("id", MagicMock())
     result = f.apply(query, None)
@@ -36,7 +36,7 @@ def test_report_schedule_filter_non_admin_filtered(
 ) -> None:
     from superset.reports.filters import ReportScheduleFilter
 
-    mock_sm.can_access_all_datasources.return_value = False
+    mock_sm.can_access_all_queries.return_value = False
     mock_sm.user_model.get_user_id.return_value = 1
     mock_sm.user_model.id = 1
     query = MagicMock()

@@ -190,10 +190,12 @@ export function DatabaseSelector({
   sqlLabMode = false,
   filterBySqlLab = false,
   onOpenModal,
+  showSchemaSelector: propsShowSchemaSelector = true,
 }: DatabaseSelectorProps) {
   const showCatalogSelector = !!db?.allow_multi_catalog;
   const [currentDb, setCurrentDb] = useState<DatabaseValue | undefined>();
   const showSchemaSelector =
+    propsShowSchemaSelector &&
     (db?.supports_schemas ?? currentDb?.supports_schemas) !== false;
   const [errorPayload, setErrorPayload] = useState<SupersetError | null>();
   const [currentCatalog, setCurrentCatalog] = useState<

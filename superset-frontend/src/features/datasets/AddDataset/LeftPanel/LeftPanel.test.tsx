@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+import type { ReactChild } from 'react';
 import fetchMock from 'fetch-mock';
 import {
   render,
@@ -25,6 +26,14 @@ import {
 } from 'spec/helpers/testing-library';
 import LeftPanel from 'src/features/datasets/AddDataset/LeftPanel';
 import { exampleDataset } from 'src/features/datasets/AddDataset/DatasetPanel/fixtures';
+import { DatasetActionType } from 'src/features/datasets/AddDataset/types';
+
+jest.mock(
+  'react-virtualized-auto-sizer',
+  () =>
+    ({ children }: { children: (params: { height: number }) => ReactChild }) =>
+      children({ height: 500 }),
+);
 
 const databasesEndpoint = 'glob:*/api/v1/database/?q*';
 const schemasEndpoint = 'glob:*/api/v1/database/*/schemas*';
@@ -100,13 +109,11 @@ beforeEach(() => {
         allow_dml: false,
         allow_multi_schema_metadata_fetch: false,
         allow_run_async: false,
-        allows_cost_estimate: null,
+        allows_cost_estimate: false,
         allows_subquery: true,
         allows_virtual_table_explore: true,
-        disable_data_preview: false,
-        disable_drill_to_detail: false,
         backend: 'postgresql',
-        changed_on: '2021-03-09T19:02:07.141095',
+        changed_on: '2021-03-09T16:31:09.117475',
         changed_on_delta_humanized: 'a day ago',
         created_by: null,
         database_name: 'test-postgres',
@@ -116,23 +123,21 @@ beforeEach(() => {
         id: 1,
       },
       {
-        allow_csv_upload: false,
+        allow_file_upload: false,
         allow_ctas: false,
         allow_cvas: false,
         allow_dml: false,
         allow_multi_schema_metadata_fetch: false,
         allow_run_async: false,
-        allows_cost_estimate: null,
+        allows_cost_estimate: false,
         allows_subquery: true,
         allows_virtual_table_explore: true,
-        disable_data_preview: false,
-        disable_drill_to_detail: false,
         backend: 'mysql',
-        changed_on: '2021-03-09T19:02:07.141095',
+        changed_on: '2021-03-09T16:31:09.117475',
         changed_on_delta_humanized: 'a day ago',
         created_by: null,
         database_name: 'test-mysql',
-        explore_database_id: 1,
+        explore_database_id: 2,
         expose_in_sqllab: true,
         force_ctas_schema: null,
         id: 2,
@@ -141,7 +146,7 @@ beforeEach(() => {
   });
 
   fetchMock.get(schemasEndpoint, {
-    result: ['information_schema', 'public'],
+    result: ['public', 'information_schema'],
   });
 
   fetchMock.get(tablesEndpoint, {
@@ -160,7 +165,7 @@ afterEach(() => {
 
 const mockFun = jest.fn();
 
-test('should render', async () => {
+test('should render database selector', async () => {
   render(<LeftPanel setDataset={mockFun} />, {
     useRedux: true,
   });
@@ -169,101 +174,52 @@ test('should render', async () => {
   ).toBeInTheDocument();
 });
 
-test('should render schema selector, database selector container, and selects', async () => {
+test('renders empty state when no database is selected', async () => {
   render(<LeftPanel setDataset={mockFun} />, { useRedux: true });
 
   expect(
-    await screen.findByText(/Select database or type to search databases/i),
-  ).toBeVisible();
-
-  const databaseSelect = screen.getByRole('combobox', {
-    name: 'Select database or type to search databases',
-  });
-  const schemaSelect = screen.getByRole('combobox', {
-    name: 'Select schema',
-  });
-  expect(databaseSelect).toBeInTheDocument();
-  expect(schemaSelect).toBeInTheDocument();
-});
-
-test('does not render blank state if there is nothing selected', async () => {
-  render(<LeftPanel setDataset={mockFun} />, { useRedux: true });
-
-  expect(
-    await screen.findByText(/Select database or type to search databases/i),
+    await screen.findByText(/Select a database to view schemas and tables/i),
   ).toBeInTheDocument();
-  const emptyState = screen.queryByRole('img', { name: /empty/i });
-  expect(emptyState).not.toBeInTheDocument();
 });
 
-test('renders list of options when user clicks on schema', async () => {
+test('renders schema tree when database is selected', async () => {
   render(<LeftPanel setDataset={mockFun} dataset={exampleDataset[0]} />, {
     useRedux: true,
   });
 
-  // Click 'test-postgres' database to access schemas
-  const databaseSelect = screen.getByRole('combobox', {
-    name: 'Select database or type to search databases',
-  });
-  await userEvent.click(databaseSelect);
-  expect(await screen.findByText('test-postgres')).toBeInTheDocument();
-  await userEvent.click(screen.getByText('test-postgres'));
-
-  // Schema select will be automatically populated if there is only one schema
-  const schemaSelect = screen.getByRole('combobox', {
-    name: /select schema/i,
-  });
   await waitFor(() => {
-    expect(schemaSelect).toBeEnabled();
+    expect(screen.getByText('public')).toBeInTheDocument();
+    expect(screen.getByText('information_schema')).toBeInTheDocument();
   });
 });
 
-test('searches for a table name', async () => {
+test('expands schema to show tables and selects a table', async () => {
   render(<LeftPanel setDataset={mockFun} dataset={exampleDataset[0]} />, {
     useRedux: true,
   });
 
-  // Click 'test-postgres' database to access schemas
-  const databaseSelect = screen.getByRole('combobox', {
-    name: /select database or type to search databases/i,
-  });
-  await userEvent.click(databaseSelect);
-  await userEvent.click(await screen.findByText('test-postgres'));
-
-  const schemaSelect = screen.getByRole('combobox', {
-    name: /select schema/i,
-  });
-  const tableSelect = screen.getByRole('combobox', {
-    name: /select table or type to search tables/i,
+  await waitFor(() => {
+    expect(screen.getByText('public')).toBeInTheDocument();
   });
 
-  await waitFor(() => expect(schemaSelect).toBeEnabled());
-
-  // Click 'public' schema to access tables
-  await userEvent.click(schemaSelect);
+  // Click 'public' schema to expand tables
   await userEvent.click(screen.getByText('public'));
-  await waitFor(() =>
-    expect(fetchMock.callHistory.calls(tablesEndpoint).length).toBe(1),
-  );
-  await userEvent.click(tableSelect);
 
   await waitFor(() => {
-    expect(
-      screen.queryByRole('option', { name: /Sheet1/i }),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole('option', { name: /Sheet2/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByText('Sheet1')).toBeInTheDocument();
+    expect(screen.getByText('Sheet2')).toBeInTheDocument();
+    expect(screen.getByText('Sheet3')).toBeInTheDocument();
   });
 
-  await userEvent.type(tableSelect, 'Sheet3');
+  // Click 'Sheet1' to select it
+  await userEvent.click(screen.getByText('Sheet1'));
 
-  await waitFor(() => {
-    expect(screen.queryByText(/Sheet1/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Sheet2/i)).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole('option', { name: /Sheet3/i }),
-    ).toBeInTheDocument();
+  expect(mockFun).toHaveBeenCalledWith({
+    type: DatasetActionType.SelectTableAndSchema,
+    payload: {
+      schema: 'public',
+      table_name: 'Sheet1',
+    },
   });
 });
 
@@ -279,39 +235,15 @@ test('renders a warning icon when a table name has a preexisting dataset', async
     },
   );
 
-  // Click 'test-postgres' database to access schemas
-  const databaseSelect = screen.getByRole('combobox', {
-    name: /select database or type to search databases/i,
-  });
-  await userEvent.click(databaseSelect);
-  await userEvent.click(await screen.findByText('test-postgres'));
-
-  const schemaSelect = screen.getByRole('combobox', {
-    name: /select schema/i,
-  });
-  const tableSelect = screen.getByRole('combobox', {
-    name: /select table or type to search tables/i,
+  await waitFor(() => {
+    expect(screen.getByText('public')).toBeInTheDocument();
   });
 
-  await waitFor(() => expect(schemaSelect).toBeEnabled());
-
-  // Warning icon should not show yet
-  expect(
-    screen.queryByRole('img', { name: 'warning' }),
-  ).not.toBeInTheDocument();
-
-  // Click 'public' schema to access tables
-  await userEvent.click(schemaSelect);
   await userEvent.click(screen.getByText('public'));
-  await userEvent.click(tableSelect);
 
   await waitFor(() => {
-    expect(
-      screen.queryByRole('option', { name: /Sheet2/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByText('Sheet2')).toBeInTheDocument();
   });
-
-  await userEvent.type(tableSelect, 'Sheet2');
 
   // Sheet2 should now show the warning icon
   expect(screen.getByRole('img', { name: 'warning' })).toBeInTheDocument();

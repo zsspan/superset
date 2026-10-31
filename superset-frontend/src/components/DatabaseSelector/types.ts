@@ -53,4 +53,5 @@ export interface DatabaseSelectorProps {
   filterBySqlLab?: boolean;
   compactMode?: boolean;
   onOpenModal?: () => void;
+  showSchemaSelector?: boolean;
 }

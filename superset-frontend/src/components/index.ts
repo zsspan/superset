@@ -33,6 +33,10 @@ export {
   type ListViewFilterValue,
 } from './ListView';
 export { DatabaseSelector, type DatabaseObject } from './DatabaseSelector';
+export {
+  default as TableExploreTree,
+  type TableExploreTreeProps,
+} from './TableExploreTree';
 export * from './Datasource';
 export * from './ErrorMessage';
 export { ImportModal, type ImportModelsModalProps } from './ImportModal';

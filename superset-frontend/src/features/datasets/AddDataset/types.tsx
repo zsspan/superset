@@ -24,6 +24,7 @@ export enum DatasetActionType {
   SelectSchema,
   SelectTable,
   ChangeDataset,
+  SelectTableAndSchema,
 }
 
 export interface DatasetObject {
@@ -57,4 +58,8 @@ export type DSReducerActionType =
         | DatasetActionType.SelectSchema
         | DatasetActionType.SelectTable;
       payload: DatasetReducerPayloadType;
+    }
+  | {
+      type: DatasetActionType.SelectTableAndSchema;
+      payload: { schema: string; table_name: string };
     };
