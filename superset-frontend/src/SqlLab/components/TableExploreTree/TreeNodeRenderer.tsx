@@ -130,10 +130,11 @@ const TreeNodeRenderer: React.FC<TreeNodeRendererProps> = ({
   const table = { schema, table_name: tableName };
   const isManuallyOpen = node.isOpen && !node.data.disableCheckbox;
   const isLoading = loadingNodes[data.id] ?? false;
+  const isTablePreviewMode = Boolean(onPreviewTable);
   const nodeOpacity =
-    identifier === 'table'
+    isTablePreviewMode && identifier === 'table'
       ? getOpacity(!node.isSelected)
-      : getOpacity(!isManuallyOpen && !node.isSelected);
+      : getOpacity(data.disableCheckbox);
 
   const renderIcon = () => {
     if (identifier === 'schema') {
@@ -184,9 +185,9 @@ const TreeNodeRenderer: React.FC<TreeNodeRendererProps> = ({
 
   // Column nodes use ColumnElement
   if (identifier === 'column' && data.columnData) {
-    const columnOpacity = getOpacity(
-      !node.isSelected && !node.parent?.isSelected,
-    );
+    const columnOpacity = isTablePreviewMode
+      ? getOpacity(!node.isSelected && !node.parent?.isSelected)
+      : 1;
     return (
       <StyledColumnNode
         className="tree-node"
@@ -235,16 +236,24 @@ const TreeNodeRenderer: React.FC<TreeNodeRendererProps> = ({
       data-selected={node.isSelected}
       onClick={e => {
         e.stopPropagation();
-        node.select();
-        if (data.type === 'table') onPreviewTable?.(table);
-        if (!node.isLeaf) {
+        if (data.type === 'table' && onPreviewTable) {
+          node.select();
+          onPreviewTable(table);
+        }
+        if (node.isLeaf) {
+          node.select();
+        } else {
           node.toggle();
         }
       }}
       onKeyDown={handleKeyboardActivation(() => {
-        node.select();
-        if (data.type === 'table') onPreviewTable?.(table);
-        if (!node.isLeaf) {
+        if (data.type === 'table' && onPreviewTable) {
+          node.select();
+          onPreviewTable(table);
+        }
+        if (node.isLeaf) {
+          node.select();
+        } else {
           node.toggle();
         }
       })}
