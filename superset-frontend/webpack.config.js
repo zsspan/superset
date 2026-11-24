@@ -102,21 +102,25 @@ const output = {
     pathData.chunk?.name === 'service-worker'
       ? '../service-worker.js'
       : defaultChunkFilename,
-  copy: [
-    'package.json',
-    { from: 'src/assets/images', to: 'images' },
-    // maplibre-gl 6's ESM-only build loads its worker from a real URL
-    // instead of an inlined blob (see MapLibre.tsx for the matching
-    // maplibregl.setWorkerUrl() call). The worker's own bundle does a
-    // relative ESM import of its "shared" chunk, so both files must be
-    // copied verbatim, unhashed, into the same output directory.
-    {
-      from: 'node_modules/maplibre-gl/dist/maplibre-gl-worker.mjs',
-    },
-    {
-      from: 'node_modules/maplibre-gl/dist/maplibre-gl-shared.mjs',
-    },
-  ],
+  ...(process.platform === 'win32'
+    ? {}
+    : {
+        copy: [
+          'package.json',
+          { from: 'src/assets/images', to: 'images' },
+          // maplibre-gl 6's ESM-only build loads its worker from a real URL
+          // instead of an inlined blob (see MapLibre.tsx for the matching
+          // maplibregl.setWorkerUrl() call). The worker's own bundle does a
+          // relative ESM import of its "shared" chunk, so both files must be
+          // copied verbatim, unhashed, into the same output directory.
+          {
+            from: 'node_modules/maplibre-gl/dist/maplibre-gl-worker.mjs',
+          },
+          {
+            from: 'node_modules/maplibre-gl/dist/maplibre-gl-shared.mjs',
+          },
+        ],
+      }),
 };
 
 if (!isDevMode) {
@@ -473,6 +477,12 @@ const config = {
   context: APP_DIR, // to automatically find tsconfig.json
   module: {
     rules: [
+      {
+        test: /\.m?js$/,
+        resolve: {
+          fullySpecified: false,
+        },
+      },
       {
         test: /datatables\.net.*/,
         loader: 'imports-loader',

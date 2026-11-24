@@ -32,10 +32,13 @@ if [ "$BUILD_SUPERSET_FRONTEND_IN_DOCKER" = "true" ]; then
         npm run prune
     fi
 
-    # Install from the committed lockfile so a dev image build resolves the same
-    # versions that were reviewed, matching the `npm ci` used in the Dockerfile.
-    echo "Running \"npm ci\""
-    npm ci
+    # Install from the committed lockfile only if node_modules isn't populated yet
+    if [ ! -x "/app/superset-frontend/node_modules/.bin/webpack" ]; then
+        echo "Running \"npm ci\""
+        npm ci
+    else
+        echo "Skipping \"npm ci\" (node_modules already populated)"
+    fi
 
     echo "Start webpack dev server"
     # start the webpack dev server, serving dynamically at http://localhost:9000

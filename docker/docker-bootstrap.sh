@@ -21,29 +21,23 @@ set -eo pipefail
 # Make python interactive
 if [ "$DEV_MODE" == "true" ]; then
     if [ "$(whoami)" = "root" ] && command -v uv > /dev/null 2>&1; then
-      # Always ensure superset-core is available
-      echo "Installing superset-core in editable mode"
-      uv pip install --no-deps -e /app/superset-core
-
-      # Only reinstall the main app for non-worker processes
-      if [ "$1" != "worker" ] && [ "$1" != "beat" ]; then
-        echo "Reinstalling the app in editable mode"
-        uv pip install -e .
+      if ! python -c "import superset_core" > /dev/null 2>&1; then
+        echo "Installing superset-core in editable mode"
+        uv pip install --no-deps -e /app/superset-core
       fi
     fi
 fi
 REQUIREMENTS_LOCAL="/app/docker/requirements-local.txt"
 PORT=${PORT:-8088}
-# Skip postgres requirements installation for workers to avoid conflicts
+# Skip postgres requirements installation if psycopg2 is already available
 if [[ "$DATABASE_DIALECT" == postgres* ]] && [ "$(whoami)" = "root" ] && [ "$1" != "worker" ] && [ "$1" != "beat" ]; then
-    # older images may not have the postgres dev requirements installed
-    echo "Installing postgres requirements"
-    if command -v uv > /dev/null 2>&1; then
-        # Use uv in newer images
-        uv pip install -e .[postgres]
-    else
-        # Use pip in older images
-        pip install -e .[postgres]
+    if ! python -c "import psycopg2" > /dev/null 2>&1; then
+        echo "Installing postgres requirements"
+        if command -v uv > /dev/null 2>&1; then
+            uv pip install --no-deps -e .[postgres]
+        else
+            pip install --no-deps -e .[postgres]
+        fi
     fi
 fi
 #
@@ -91,9 +85,7 @@ case "${1}" in
         echo "  🔒 Werkzeug debugger disabled (set SUPERSET_DEBUG_ENABLED=true to enable)"
     fi
 
-    flask run -p $PORT --reload $DEBUGGER_FLAG --host=0.0.0.0 \
-      --extra-files "/app/superset/extensions/.reload_trigger" \
-      --exclude-patterns "*/node_modules/*:*/.venv/*:*/build/*:*/__pycache__/*:*/superset-frontend/*:*/superset/__init__.py"
+    flask run -p $PORT --no-reload $DEBUGGER_FLAG --host=0.0.0.0
     ;;
   app-gunicorn)
     echo "Starting web app..."
